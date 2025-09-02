@@ -1,0 +1,47 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# IDE
+.idea
+*.iml
+.vscode
+
+# Maven
+target/
+.mvn/
+mvnw*
+
+# Documentation
+*.md
+LICENSE
+.txt
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# AWS/Terraform
+*.tf
+*.tfstate
+*.tfstate.backup
+.terraform/
+
+# Environment files
+.env
+*.env.local
+
+# Logs
+*.log
+logs/
+
+# Tests
+src/test/
+
+# CI/CD
+.github/
+
+# Configuration
+*.toml

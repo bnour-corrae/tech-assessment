@@ -1,0 +1,22 @@
+### Help ###
+HELP.md
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+### Maven ###
+mvnw*
+.mvn/
+target/
+**/src/main/**/target/
+**/src/test/**/target/
+
+### Terraform ###
+*.tfstate
+.terraform/
+
+### Docker Compose ###
+*-data/
