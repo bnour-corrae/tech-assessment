@@ -15,8 +15,9 @@ target/
 **/src/test/**/target/
 
 ### Terraform ###
-*.tfstate
+*.tfstate*
 .terraform/
+terraform/*.lock.hcl
 
 ### Docker Compose ###
 *-data/
