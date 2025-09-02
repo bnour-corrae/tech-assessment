@@ -1,0 +1,98 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - development
+  workflow_dispatch:
+
+env:
+  AWS_REGION: us-east-1
+  AWS_ACCOUNT_ID: "XXXXXXX"
+  AWS_ECR_REPO: "amazonaws.com"
+  ECS_TASK_DEFINITION: "files/task-definitions/vehicle-catalog.json"
+  CONTAINER_NAME: "vehicle-catalog"
+  ECS_SERVICE: "vehicle-catalog"
+  ECS_CLUSTER: "wv"
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17 for x64
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          architecture: x64
+
+      - name: Run Maven verify
+        run: mvn verify
+
+      - name: Configure AWS Credentials
+        if: github.ref == 'refs/heads/main'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/github-actions/GithubActionsAccess
+          role-session-name: "github-ecr"
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        if: github.ref == 'refs/heads/main'
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build and push
+        id: build-image
+        if: github.ref == 'refs/heads/main'
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{
+              format('{0}.dkr.ecr.{1}.{2}/vehicle-catalog:{3}',
+              env.AWS_ACCOUNT_ID,
+              env.AWS_REGION,
+              env.AWS_ECR_REPO,
+              github.sha)
+            }}
+
+      - name: Fill in the new image ID in the Amazon ECS task definition
+        id: task-def
+        if: github.ref == 'refs/heads/main'
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: "files/task-definition.json"
+          image: ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.${{ env.AWS_ECR_REPO }}/vehicle-catalog:${{ github.sha }}
+          container-name: ${{ env.CONTAINER_NAME }}
+          environment-variables: |
+            DB_DRIVER=org.postgresql.Driver
+            ENABLE_H2_CONSOLE=false
+            DB_PLATFORM=org.hibernate.dialect.PostgreSQLDialect
+            MULTIPART_MAX_FILE_SIZE=10MB
+            MULTIPART_MAX_REQUEST_SIZE=10MB
+            AWS_REGION=${{ env.AWS_REGION }}
+            S3_BUCKET_NAME=wv-vehicle-catalog-images
+            MAX_NUM_OF_IMAGES_PER_VEHICLE=2
+          secrets:
+            DB_URL=arn:aws:ssm:${{ env.AWS_REGION }}:${{ env.AWS_ACCOUNT_ID }}:parameter/secret"
+            DB_USER=arn:aws:ssm:${{ env.AWS_REGION }}:${{ env.AWS_ACCOUNT_ID }}:parameter/secret"
+      - name: Deploy Amazon ECS task definition
+        if: github.ref == 'refs/heads/main'
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: ${{ env.ECS_SERVICE }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true

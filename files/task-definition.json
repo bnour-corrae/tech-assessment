@@ -1,0 +1,35 @@
+{
+  "cpu": 0,
+  "environment": [],
+  "essential": true,
+  "image": "XXXXXXXXX.dkr.ecr.us-east-1.amazonaws.com/vehicle-catalog:8875a5423da09f536c9ef406e2f05d9d1231e08e",
+  "interactive": false,
+  "linuxParameters": {
+    "initProcessEnabled": true
+  },
+  "logConfiguration": {
+    "logDriver": "awslogs",
+    "options": {
+      "awslogs-group": "/aws/ecs/vehicle-catalog/vehicle-catalog",
+      "awslogs-region": "us-east-1",
+      "awslogs-stream-prefix": "ecs"
+    }
+  },
+  "mountPoints": [],
+  "name": "vehicle-catalog",
+  "portMappings": [
+    {
+      "containerPort": 8080,
+      "hostPort": 8080,
+      "name": "default",
+      "protocol": "tcp"
+    }
+  ],
+  "privileged": false,
+  "pseudoTerminal": false,
+  "readonlyRootFilesystem": true,
+  "startTimeout": 30,
+  "stopTimeout": 120,
+  "systemControls": [],
+  "volumesFrom": []
+}
